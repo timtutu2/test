@@ -71,7 +71,7 @@ class _MapWithOverlayState extends State<MapWithOverlay> with TickerProviderStat
   late Future<void> _loadLocationFuture;
   //for location drop down
   bool _isDropdownVisible = false;
-  String _selectedLocation = '本部校區';
+  String _selectedLocation = '光復校區';
   late Map<String, gmaps.LatLng> _locations= {} ;
 
   @override
@@ -97,12 +97,11 @@ class _MapWithOverlayState extends State<MapWithOverlay> with TickerProviderStat
   }
 
   Future<void> _loadloaction() async{ 
-    await Future.delayed(Duration(milliseconds: 1200)); //potential change app state
+    await Future.delayed(Duration(milliseconds: 2200)); //potential change app state
     for(int i=0; i<widget.schoolLocAll!.length; i++){
       schoolL_All.add(convertLatLngList(widget.schoolLocAll![i]));
     }
-    print(convertLatLng(widget.schoolLocationDoc[1].center)); 
-
+    //load center
     if (widget.schoolLocationDoc.isNotEmpty) {
     for(int i=0; i<widget.schoolLocationDoc!.length; i++){
       _locations[widget.schoolLocationDoc[i].name]=convertLatLng(widget.schoolLocationDoc[i].center); 
@@ -111,40 +110,30 @@ class _MapWithOverlayState extends State<MapWithOverlay> with TickerProviderStat
     }
   }
 
-  // Future<void> _loadcenter() async{
-  //   await Future.delayed(Duration(milliseconds: 1200));
-  //   for(int i=0; i<widget.schoolLocationDoc.length; i++){
-  //       print(widget.schoolLocationDoc.length);
-  //       _locations[widget.schoolLocationDoc[i].name]=convertLatLng(widget.schoolLocationDoc![i].center); 
-  //       print('in_cen'); 
-  //   }
-  // }
-
-  // Future<void> _loadPolygons() async {
-  //   await Future.delayed(Duration(milliseconds: 1000)); // Simulate loading delay
-  //   if (_schoollocationfromDoc.isNotEmpty) {
-  //     print('inload');
-  //     Set<gmaps.Polygon> polygons = {
-  //       gmaps.Polygon(
-  //         polygonId: gmaps.PolygonId('overlayPolygon'),
-  //         points: _schoollocationfromDoc['1']!,
-  //         strokeWidth: 2,
-  //         strokeColor: Colors.red,
-  //         fillColor: Colors.red.withOpacity(0.1),
-  //       ),
-  //       gmaps.Polygon(
-  //         polygonId: gmaps.PolygonId('overlayPolygon2'),
-  //         points: _schoollocationfromDoc['0']!,
-  //         strokeWidth: 2,
-  //         strokeColor: Colors.red,
-  //         fillColor: Colors.red.withOpacity(0.1),
-  //       ),
-  //     };
-  //     setState(() {
-  //       _polygons = polygons;
-  //     });
-  //   }
-  // }
+  _loadPolygons() {
+    if (schoolL_All.isNotEmpty) {
+      print('inload');
+      Set<gmaps.Polygon> polygons = {
+        gmaps.Polygon(
+          polygonId: gmaps.PolygonId('overlayPolygon'),
+          points: schoolL_All[0]!,
+          strokeWidth: 2,
+          strokeColor: Colors.red,
+          fillColor: Colors.red.withOpacity(0.1),
+        ),
+        gmaps.Polygon(
+          polygonId: gmaps.PolygonId('overlayPolygon2'),
+          points: _schoollocationfromDoc['0']!,
+          strokeWidth: 2,
+          strokeColor: Colors.red,
+          fillColor: Colors.red.withOpacity(0.1),
+        ),
+      };
+      setState(() {
+        _polygons = polygons;
+      });
+    }
+  }
 
   void _initializeAnimation() {
     _animationController = AnimationController(
@@ -221,7 +210,7 @@ class _MapWithOverlayState extends State<MapWithOverlay> with TickerProviderStat
       } else {
         gmaps.BitmapDescriptor markerIcon =
             await _getScaledIcon(data[i]['assetPath'], _zoomLevel);
-        _markers[i.toString()] = gmaps.Marker(
+            _markers[i.toString()] = gmaps.Marker(
             markerId: MarkerId(i.toString()),
             position: convertLatLng(data[i]['position']),
             icon: markerIcon,
@@ -266,8 +255,6 @@ class _MapWithOverlayState extends State<MapWithOverlay> with TickerProviderStat
     final byteData = await rootBundle.load(assetPath);
     final imageData = byteData.buffer.asUint8List();
 
-    // final ImageConfiguration imageConfiguration = ImageConfiguration(size: Size(24*scale, 24*scale));
-    // return await gmaps.BitmapDescriptor.fromAssetImage(imageConfiguration, assetPath);
     final result = await FlutterImageCompress.compressWithList(
       imageData,
       minWidth: (scale).toInt(),
@@ -371,13 +358,13 @@ class _MapWithOverlayState extends State<MapWithOverlay> with TickerProviderStat
                       strokeColor: Colors.red,
                       fillColor: Colors.red.withOpacity(0.1),
                     ),
-                    gmaps.Polygon(
-                      polygonId: gmaps.PolygonId('overlayPolygon2'),
-                      points: schoolL_All[1],
-                      strokeWidth: 2,
-                      strokeColor: Colors.red,
-                      fillColor: Colors.red.withOpacity(0.1),
-                    ),
+                    // gmaps.Polygon(
+                    //   polygonId: gmaps.PolygonId('overlayPolygon2'),
+                    //   points: schoolL_All[1],
+                    //   strokeWidth: 2,
+                    //   strokeColor: Colors.red,
+                    //   fillColor: Colors.red.withOpacity(0.1),
+                    // ),
                   },
                 //polygons: _polygons.toSet(),
                 markers: _markers.values.toSet(),
