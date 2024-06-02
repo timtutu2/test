@@ -54,13 +54,20 @@ class _InstantShareWidgetState extends State<InstantShareWidget> {
             _model.schoolLoc!.latAndLng.toList().cast<LatLng>();
       });
       logFirebaseEvent('instant_share_firestore_query_doc');
-      _model.schoolLocDoc = await querySchoolLocRecordOnce(
+      _model.schoolLocDoc = (FFAppState().ListofLocationDocRef.isEmpty)? await querySchoolLocRecordOnce(
         queryBuilder: (schoolLocRecord) => schoolLocRecord.where(
           'school',
           isEqualTo: valueOrDefault(currentUserDocument?.school, ''),
         ),
         singleRecord: false,
+      ) : 
+      await Future.wait(
+        FFAppState().ListofLocationDocRef.map((docRef) async {
+            final docSnapshot = await docRef.get();
+            return SchoolLocRecord.fromSnapshot(docSnapshot);
+        }).toList(),
       );
+      (FFAppState().ListofLocationDocRef.isEmpty)? print('empty') : print('notempty');
       setState(() {
         _model.schoollocallocDoc = _model.schoolLocDoc! ;
         for (int i = 0; i < _model.schoolLocDoc!.length; i++) {
