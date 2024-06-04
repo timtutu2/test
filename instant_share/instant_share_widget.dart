@@ -49,12 +49,15 @@ class _InstantShareWidgetState extends State<InstantShareWidget> {
         singleRecord: true,
       ).then((s) => s.firstOrNull);
       logFirebaseEvent('instant_share_update_page_state');
+      //print(_model.schoolLoc);
       setState(() {
         _model.schoollocalloc =
             _model.schoolLoc!.latAndLng.toList().cast<LatLng>();
       });
       logFirebaseEvent('instant_share_firestore_query_doc');
-      _model.schoolLocDoc = (FFAppState().ListofLocationDocRef.isEmpty)? await querySchoolLocRecordOnce(
+      print((FFAppState().userSchoolforMapNeedUpdate));
+      ((FFAppState().ListofLocationDocRef.isEmpty)||(FFAppState().userSchoolforMapNeedUpdate))? print('empty') : print('notempty');
+      _model.schoolLocDoc = ((FFAppState().ListofLocationDocRef.isEmpty)||FFAppState().userSchoolforMapNeedUpdate)? await querySchoolLocRecordOnce(
         queryBuilder: (schoolLocRecord) => schoolLocRecord.where(
           'school',
           isEqualTo: valueOrDefault(currentUserDocument?.school, ''),
@@ -67,11 +70,14 @@ class _InstantShareWidgetState extends State<InstantShareWidget> {
             return SchoolLocRecord.fromSnapshot(docSnapshot);
         }).toList(),
       );
-      (FFAppState().ListofLocationDocRef.isEmpty)? print('empty') : print('notempty');
       setState(() {
         _model.schoollocallocDoc = _model.schoolLocDoc! ;
         for (int i = 0; i < _model.schoolLocDoc!.length; i++) {
           _model.schoollocAll.add(_model.schoollocallocDoc[i].latAndLng);
+          //print('in');
+          for(int j = 0; j < _model.schoollocallocDoc[i].items.length; j++){
+              FFAppState().Listofitems.add(_model.schoollocallocDoc[i].items[j]);   
+          }
         }
       });    
     });
@@ -166,6 +172,7 @@ class _InstantShareWidgetState extends State<InstantShareWidget> {
                           schoolLocation: _model.schoollocalloc,
                           schoolLocationDoc: _model.schoollocallocDoc,
                           schoolLocAll: _model.schoollocAll,
+                          items: FFAppState().Listofitems
                         ),
                       ),
                     ),
