@@ -22,18 +22,6 @@ import 'package:connextion/flutter_flow/flutter_flow_google_map.dart';
 
 import 'package:google_maps_flutter/google_maps_flutter.dart' as gmaps;
 
-List<Map<String, dynamic>> data = [
-  {
-    'id': '1',
-    'position': LatLng(24.789, 120.993),
-    'assetPath': 'assets/images/square.png',
-  },
-  {
-    'id': '2',
-    'position': LatLng(24.787642, 120.993054),
-    'assetPath': 'assets/images/duck.gif',
-  },
-];
 
 class MapWithOverlay extends StatefulWidget {
   const MapWithOverlay({
@@ -43,7 +31,8 @@ class MapWithOverlay extends StatefulWidget {
     this.userLocation,
     this.schoolLocation,
     required this.schoolLocationDoc,
-    required this.schoolLocAll
+    required this.schoolLocAll,
+    required this.items,
   }) : super(key: key);
 
   final double? width;
@@ -52,6 +41,7 @@ class MapWithOverlay extends StatefulWidget {
   final List<LatLng>? schoolLocation;
   final List<SchoolLocRecord> schoolLocationDoc;
   final List<List<LatLng>>? schoolLocAll;
+  final List<ItemOnMapStruct> items;
 
   @override
   State<MapWithOverlay> createState() => _MapWithOverlayState();
@@ -61,43 +51,87 @@ class _MapWithOverlayState extends State<MapWithOverlay> with TickerProviderStat
   late gmaps.GoogleMapController _mapController;
   double _zoomLevel = 15.0;
   final Map<String, gmaps.Marker> _markers = {};
+//load gif
   List<BitmapDescriptor> _duckFrames = [];
+  List<BitmapDescriptor> _buildingsFrames = [];
+  final List<String> duckframePaths = [];
+  final List<String> buildingsframePaths = [];
+  String ducknewpath = 'assets/images/duck/duck-0.png';
+  String buildingsnewpath = 'assets/images/buildings/buildings-0.png';
+//load gif
   late AnimationController _animationController;
-  final List<String> framePaths = [];
   Set<gmaps.Polygon> _polygons = {};
   Map<String, List<gmaps.LatLng>> _schoollocationfromDoc = {};
   List<List<gmaps.LatLng>> schoolL_All = [];
-  String newpath = 'assets/images/duck-0.png';
+  
   late Future<void> _loadLocationFuture;
   //for location drop down
   bool _isDropdownVisible = false;
-  String _selectedLocation = '光復校區';
+  String _selectedLocation = '光復校區';  //need to change 'not static' by tim
   late Map<String, gmaps.LatLng> _locations= {} ;
+  late List<Map<String, dynamic>> data= [];
 
   @override
   void initState() {
     super.initState();
     print('init');
-    _loadLocationFuture =_loadloaction();
-    _loadDuckFrames().then((_) {
-      _initializeAnimation();
+    _loaddata().then((_) {
+      _generateMarkers();
+      _loadgifFrames().then((_) {
+        _initializeAnimation();
+      });
     });
-    _generateMarkers();
+    _loadLocationFuture =_loadloaction();
   }
 
-  Future<void> _loadDuckFrames() async {
-    for (int i = 0; i <= 14; i++) {
-      framePaths.add('assets/images/duck-$i.png');
+Future<void> _loaddata() async{
+  await Future.delayed(Duration(milliseconds: 1000));
+  print(widget.items.length);
+  for (int i = 0; i < widget.items.length; i++) {
+    String tempname=widget.items[i].itemName;
+    switch(tempname){
+      case 'duck':
+        var item = {
+        'id': (i + 1).toString(), // Convert to string to match your initial structure
+        'pic_name': widget.items[i].itemName,
+        'position': widget.items[i].itemLoc, // Assuming itemLoc is a LatLng
+        'assetPath': 'assets/images/duck/duck.gif' // Set asset path, modify as needed
+        };
+        data.add(item);
+      case 'buildings':
+        var item = {
+        'id': (i + 1).toString(), // Convert to string to match your initial structure
+        'pic_name': widget.items[i].itemName,
+        'position': widget.items[i].itemLoc, // Assuming itemLoc is a LatLng
+        'assetPath': 'assets/images/buildings/buildings-0.png' // Set asset path, modify as needed
+        };
+        data.add(item);
     }
-    for (String path in framePaths) {
-      gmaps.BitmapDescriptor _markerIcon =
-          await _getScaledIcon(path, _zoomLevel);
+  }
+  print(data);
+}
+
+  Future<void> _loadgifFrames() async {
+    //duck
+    for (int i = 0; i <= 14; i++) {
+      duckframePaths.add('assets/images/duck/duck-$i.png');
+    }
+    for (String path in duckframePaths) {
+      gmaps.BitmapDescriptor _markerIcon = await _getScaledIcon(path, _zoomLevel);
       _duckFrames.add(_markerIcon);
+    }
+    //buildings
+    for (int i = 0; i <= 37; i++) {
+      buildingsframePaths.add('assets/images/buildings/buildings-$i.png');
+    }
+    for (String path in buildingsframePaths) {
+      gmaps.BitmapDescriptor _markerIcon = await _getScaledIcon(path, _zoomLevel);
+      _buildingsFrames.add(_markerIcon);
     }
   }
 
   Future<void> _loadloaction() async{ 
-    await Future.delayed(Duration(milliseconds: 2200)); //potential change app state
+    await Future.delayed(Duration(milliseconds: 1000)); //potential change app state
     for(int i=0; i<widget.schoolLocAll!.length; i++){
       schoolL_All.add(convertLatLngList(widget.schoolLocAll![i]));
     }
@@ -108,30 +142,27 @@ class _MapWithOverlayState extends State<MapWithOverlay> with TickerProviderStat
       print('in_cen'); 
       }
     }
+    _loadPolygons();
   }
 
-  _loadPolygons() {
+  void _loadPolygons()  {
     if (schoolL_All.isNotEmpty) {
-      print('inload');
-      Set<gmaps.Polygon> polygons = {
+    print('inloadpoly');
+    Set<gmaps.Polygon> polygons = {};
+    for (int i=0; i<schoolL_All.length; i++) {
+      polygons.add(
         gmaps.Polygon(
-          polygonId: gmaps.PolygonId('overlayPolygon'),
-          points: schoolL_All[0]!,
+          polygonId: gmaps.PolygonId('overlayPolygon_$i'),
+          points: schoolL_All[i],
           strokeWidth: 2,
           strokeColor: Colors.red,
           fillColor: Colors.red.withOpacity(0.1),
         ),
-        gmaps.Polygon(
-          polygonId: gmaps.PolygonId('overlayPolygon2'),
-          points: _schoollocationfromDoc['0']!,
-          strokeWidth: 2,
-          strokeColor: Colors.red,
-          fillColor: Colors.red.withOpacity(0.1),
-        ),
-      };
-      setState(() {
-        _polygons = polygons;
-      });
+      );
+    }
+    setState(() {
+      _polygons = polygons;
+    });
     }
   }
 
@@ -149,18 +180,31 @@ class _MapWithOverlayState extends State<MapWithOverlay> with TickerProviderStat
   }
 
   Future<void> _updateAnimatedMarker() async {
-    final frameIndex = (_animationController.value * framePaths.length).floor() % framePaths.length;
-    final newpath = framePaths[frameIndex];
-    
-    final newMarker = _markers['duck']!.copyWith(
-      iconParam: _duckFrames.isNotEmpty 
-        ? await _getScaledIcon(newpath, _zoomLevel) 
-        : BitmapDescriptor.defaultMarker,
-    );
-
-    setState(() {
-      _markers['duck'] = newMarker;
-    });
+    for(int i = 0; i < data.length; i++){
+      String icon_name=data[i]['pic_name'];
+      switch (icon_name){
+        case 'duck':
+          final frameIndex = (_animationController.value * duckframePaths.length).floor() % duckframePaths.length;
+          ducknewpath = duckframePaths[frameIndex];
+          final newMarker = _markers[i.toString()]!.copyWith(
+            iconParam: _duckFrames.isNotEmpty ? await _getScaledIcon(ducknewpath, _zoomLevel) : BitmapDescriptor.defaultMarker,
+          );
+          setState(() {
+            _markers[i.toString()] = newMarker;
+          });
+          break;
+        case 'buildings':
+          final frameIndex = (_animationController.value * buildingsframePaths.length).floor() % buildingsframePaths.length;
+          buildingsnewpath = buildingsframePaths[frameIndex];
+          final newMarker = _markers[i.toString()]!.copyWith(
+            iconParam: _buildingsFrames.isNotEmpty ? await _getScaledIcon(buildingsnewpath, _zoomLevel) : BitmapDescriptor.defaultMarker,
+          );
+          setState(() {
+            _markers[i.toString()] = newMarker;
+          });
+          break;
+      }
+    }
   }
 
   void _onMapCreated(gmaps.GoogleMapController controller) {
@@ -193,34 +237,44 @@ class _MapWithOverlayState extends State<MapWithOverlay> with TickerProviderStat
     return temp;
   }
 
-  _generateMarkers() async {
+   _generateMarkers() async {
+    print(data.length);
     for (int i = 0; i < data.length; i++) {
       gmaps.BitmapDescriptor markerIconGen;
-      if (i == 1) {
-         markerIconGen = _duckFrames.isNotEmpty ? await _getScaledIcon(newpath, _zoomLevel) : BitmapDescriptor.defaultMarker;
-        _markers['duck'] = gmaps.Marker(
-          markerId: gmaps.MarkerId('duck'),
+      String tempname=data[i]['pic_name'];
+      //print(tempname);
+      switch (tempname) {
+        case 'duck':
+          markerIconGen = _duckFrames.isNotEmpty ? await _getScaledIcon(ducknewpath, _zoomLevel) : BitmapDescriptor.defaultMarker;
+          _markers[i.toString()] = gmaps.Marker(
+          markerId: gmaps.MarkerId(data[i]['id'].toString()),
           position: convertLatLng(data[i]['position']),
           icon: markerIconGen,
           infoWindow: gmaps.InfoWindow(title: 'Animated Duck Marker'),
           onTap: () {
             _showDuckMarkerBottomSheet();
-          },
-        );
-      } else {
-        gmaps.BitmapDescriptor markerIcon =
-            await _getScaledIcon(data[i]['assetPath'], _zoomLevel);
-            _markers[i.toString()] = gmaps.Marker(
-            markerId: MarkerId(i.toString()),
-            position: convertLatLng(data[i]['position']),
-            icon: markerIcon,
-            infoWindow: InfoWindow(title: 'This is a marker'));
+            },
+          );
+          print('induck');
+        case 'buildings':
+          markerIconGen = _buildingsFrames.isNotEmpty ? await _getScaledIcon(buildingsnewpath, _zoomLevel) : BitmapDescriptor.defaultMarker;
+          _markers[i.toString()] = gmaps.Marker(
+          markerId: gmaps.MarkerId(data[i]['id'].toString()),
+          position: convertLatLng(data[i]['position']),
+          icon: markerIconGen,
+          infoWindow: gmaps.InfoWindow(title: 'Animated Duck Marker'),
+          onTap: () {
+            _showDuckMarkerBottomSheet();
+            },
+          );
+          print('inbuildings');
       }
       setState(() {});
     }
     print('Markers created');
   }
 
+  //for static
   _updateMarkers() async {
     for (int i = 0; i < data.length; i++) {
       gmaps.BitmapDescriptor markerIcon;
@@ -234,13 +288,13 @@ class _MapWithOverlayState extends State<MapWithOverlay> with TickerProviderStat
         // );
         //print('in duck update');
       } else {
-        markerIcon = await _getScaledIcon(data[i]['assetPath'], _zoomLevel);
-        _markers[i.toString()] = gmaps.Marker(
-          markerId: gmaps.MarkerId(i.toString()),
-          position: convertLatLng(data[i]['position']),
-          icon: markerIcon,
-          infoWindow: gmaps.InfoWindow(title: 'This is a marker'),
-        );
+        // markerIcon = await _getScaledIcon(data[i]['assetPath'], _zoomLevel);
+        // _markers[i.toString()] = gmaps.Marker(
+        //   markerId: gmaps.MarkerId(i.toString()),
+        //   position: convertLatLng(data[i]['position']),
+        //   icon: markerIcon,
+        //   infoWindow: gmaps.InfoWindow(title: 'This is a marker'),
+        // );
       }
       setState(() {});
     }
@@ -350,23 +404,7 @@ class _MapWithOverlayState extends State<MapWithOverlay> with TickerProviderStat
                 ),
                 myLocationEnabled: true,
                 myLocationButtonEnabled: true,
-                polygons: {
-                    gmaps.Polygon(
-                      polygonId: gmaps.PolygonId('overlayPolygon'),
-                      points: schoolL_All[0],
-                      strokeWidth: 2,
-                      strokeColor: Colors.red,
-                      fillColor: Colors.red.withOpacity(0.1),
-                    ),
-                    // gmaps.Polygon(
-                    //   polygonId: gmaps.PolygonId('overlayPolygon2'),
-                    //   points: schoolL_All[1],
-                    //   strokeWidth: 2,
-                    //   strokeColor: Colors.red,
-                    //   fillColor: Colors.red.withOpacity(0.1),
-                    // ),
-                  },
-                //polygons: _polygons.toSet(),
+                polygons: _polygons.toSet(),
                 markers: _markers.values.toSet(),
               ),
               Positioned(
