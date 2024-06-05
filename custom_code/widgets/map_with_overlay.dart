@@ -10,6 +10,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_image_compress/flutter_image_compress.dart';
 import 'dart:typed_data';
 import 'package:flutter/services.dart' show rootBundle;
+import 'dart:convert';
 // Begin custom widget code
 // DO NOT REMOVE OR MODIFY THE CODE ABOVE!
 
@@ -84,7 +85,25 @@ class _MapWithOverlayState extends State<MapWithOverlay> with TickerProviderStat
     _loadLocationFuture =_loadloaction();
   }
 
-Future<void> _loaddata() async{
+  //this is the function to load custom map style json
+  void changeMapMode(GoogleMapController mapController) {
+    getJsonFile("assets/map/map_style.json")
+        .then((value) => setMapStyle(value, mapController));
+  }
+  
+  //map change help function
+  void setMapStyle(String mapStyle, GoogleMapController mapController) {
+    mapController.setMapStyle(mapStyle);
+  }
+  
+  //map change help function
+  Future<String> getJsonFile(String path) async {
+    ByteData byte = await rootBundle.load(path);
+    var list = byte.buffer.asUint8List(byte.offsetInBytes,byte.lengthInBytes);
+    return utf8.decode(list);
+  }
+
+  Future<void> _loaddata() async{
   await Future.delayed(Duration(milliseconds: 1000));
   print(widget.items.length);
   for (int i = 0; i < widget.items.length; i++) {
@@ -209,6 +228,7 @@ Future<void> _loaddata() async{
 
   void _onMapCreated(gmaps.GoogleMapController controller) {
     _mapController = controller;
+    changeMapMode(_mapController);
     setState(() {
       _generateMarkers();
     });
