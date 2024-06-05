@@ -59,6 +59,7 @@ class _MapWithOverlayState extends State<MapWithOverlay> with TickerProviderStat
   final List<String> buildingsframePaths = [];
   String ducknewpath = 'assets/images/duck/duck-0.png';
   String buildingsnewpath = 'assets/images/buildings/buildings-0.png';
+  String tempmarkpath = 'assets/images/square.png';
 //load gif
   late AnimationController _animationController;
   Set<gmaps.Polygon> _polygons = {};
@@ -378,6 +379,25 @@ class _MapWithOverlayState extends State<MapWithOverlay> with TickerProviderStat
     );
   }
 
+  //add marker
+  void _addMarker() async{
+    gmaps.BitmapDescriptor markerIconGen;
+    gmaps.LatLng addpoint =convertLatLng(widget.userLocation);
+    final markerId = 'user_Add';
+    markerIconGen = tempmarkpath.isNotEmpty ? await _getScaledIcon(tempmarkpath, _zoomLevel) : BitmapDescriptor.defaultMarker;
+    _markers[markerId] = gmaps.Marker(
+    markerId: gmaps.MarkerId(markerId),
+    position: addpoint,
+    icon: markerIconGen,
+    infoWindow: gmaps.InfoWindow(title: 'user temp Marker'),
+    onTap: () {
+      _showDuckMarkerBottomSheet();
+      },
+    );
+    print(_markers.length);
+    print(data.length);
+    setState(() {});
+  }
   //Build main
   @override
   Widget build(BuildContext context) {
@@ -417,8 +437,7 @@ class _MapWithOverlayState extends State<MapWithOverlay> with TickerProviderStat
                 onMapCreated: _onMapCreated,
                 onCameraMove: _onCameraMove,
                 initialCameraPosition: gmaps.CameraPosition(
-                  //target: Startpoint, // Center of polygon
-                  target: gmaps.LatLng(24.792172, 120.990628),
+                  target: gmaps.LatLng(24.792172, 120.990628),  //initial position need change by tim
                   tilt: 60,
                   zoom: _zoomLevel,
                 ),
@@ -472,6 +491,17 @@ class _MapWithOverlayState extends State<MapWithOverlay> with TickerProviderStat
                       ),
                     ),
                   ],
+                ),
+              ),
+              Positioned(
+                bottom: 16.0,
+                left: 0,
+                right: 0,
+                child: Center(
+                  child: FloatingActionButton(
+                    onPressed: _addMarker,
+                    child: Icon(Icons.add_location),
+                  ),
                 ),
               ),
             ],
