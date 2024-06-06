@@ -47,6 +47,9 @@ class _SelectcoursesWidgetState extends State<SelectcoursesWidget>
       logFirebaseEvent('selectcourses_update_component_state');
       _model.compschool = valueOrDefault(currentUserDocument?.school, '');
       setState(() {});
+      logFirebaseEvent('selectcourses_update_component_state');
+      _model.compsemester = _model.dropDownSValue;
+      setState(() {});
     });
 
     _model.textController ??= TextEditingController();
@@ -73,18 +76,21 @@ class _SelectcoursesWidgetState extends State<SelectcoursesWidget>
       padding: const EdgeInsetsDirectional.fromSTEB(10.0, 0.0, 10.0, 0.0),
       child: StreamBuilder<List<NthuCoursesRecord>>(
         stream: FFAppState().courseSelectCache(
-          uniqueQueryKey: _model.compschool,
+          uniqueQueryKey: functions.selectcoursecache(
+              functions.schoolcheck(_model.compschool!)!,
+              valueOrDefault<String>(
+                _model.compsemester,
+                '113-1',
+              )),
           requestFn: () => queryNthuCoursesRecord(
             queryBuilder: (nthuCoursesRecord) => nthuCoursesRecord
                 .where(
-                  'index',
-                  isGreaterThanOrEqualTo:
-                      functions.schoolIndexupperBound(_model.compschool).first,
+                  'school',
+                  isEqualTo: functions.schoolcheck(_model.compschool!),
                 )
                 .where(
-                  'index',
-                  isLessThanOrEqualTo:
-                      functions.schoolIndexupperBound(_model.compschool).last,
+                  'semester',
+                  isEqualTo: functions.fakeFsemester(_model.compsemester!),
                 )
                 .orderBy('index'),
           ),
@@ -250,7 +256,7 @@ class _SelectcoursesWidgetState extends State<SelectcoursesWidget>
                     children: [
                       Padding(
                         padding:
-                            const EdgeInsetsDirectional.fromSTEB(20.0, 0.0, 0.0, 0.0),
+                            const EdgeInsetsDirectional.fromSTEB(10.0, 0.0, 0.0, 0.0),
                         child: AuthUserStreamWidget(
                           builder: (context) => FlutterFlowDropDown<String>(
                             controller: _model.dropDownValueController ??=
@@ -268,7 +274,7 @@ class _SelectcoursesWidgetState extends State<SelectcoursesWidget>
                               _model.compschool = _model.dropDownValue;
                               setState(() {});
                             },
-                            width: 300.0,
+                            width: 235.0,
                             height: 56.0,
                             searchHintTextStyle: FlutterFlowTheme.of(context)
                                 .labelMedium
@@ -310,6 +316,64 @@ class _SelectcoursesWidgetState extends State<SelectcoursesWidget>
                             isSearchable: true,
                             isMultiSelect: false,
                           ),
+                        ),
+                      ),
+                      Padding(
+                        padding: const EdgeInsetsDirectional.fromSTEB(
+                            10.0, 0.0, 10.0, 0.0),
+                        child: FlutterFlowDropDown<String>(
+                          controller: _model.dropDownSValueController ??=
+                              FormFieldController<String>(
+                            _model.dropDownSValue ??= '112-2',
+                          ),
+                          options: const ['112-2', '113-1'],
+                          onChanged: (val) async {
+                            setState(() => _model.dropDownSValue = val);
+                            logFirebaseEvent(
+                                'SELECTCOURSES_DropDownS_ON_FORM_WIDGET_S');
+                            logFirebaseEvent(
+                                'DropDownS_update_component_state');
+                            _model.compsemester = _model.dropDownSValue;
+                            _model.updatePage(() {});
+                          },
+                          width: 90.0,
+                          height: 56.0,
+                          searchHintTextStyle:
+                              FlutterFlowTheme.of(context).labelMedium.override(
+                                    fontFamily: 'YuPearl',
+                                    letterSpacing: 0.0,
+                                    useGoogleFonts: false,
+                                  ),
+                          searchTextStyle:
+                              FlutterFlowTheme.of(context).bodyMedium.override(
+                                    fontFamily: 'YuPearl',
+                                    letterSpacing: 0.0,
+                                    useGoogleFonts: false,
+                                  ),
+                          textStyle:
+                              FlutterFlowTheme.of(context).bodyMedium.override(
+                                    fontFamily: 'YuPearl',
+                                    letterSpacing: 0.0,
+                                    useGoogleFonts: false,
+                                  ),
+                          hintText: '學期',
+                          searchHintText: '學期',
+                          icon: Icon(
+                            Icons.arrow_drop_down,
+                            color: FlutterFlowTheme.of(context).secondaryText,
+                            size: 24.0,
+                          ),
+                          fillColor: FlutterFlowTheme.of(context).info,
+                          elevation: 2.0,
+                          borderColor: const Color(0xFF42BAF1),
+                          borderWidth: 1.0,
+                          borderRadius: 16.0,
+                          margin: const EdgeInsetsDirectional.fromSTEB(
+                              10.0, 4.0, 5.0, 4.0),
+                          hidesUnderline: true,
+                          isOverButton: true,
+                          isSearchable: true,
+                          isMultiSelect: false,
                         ),
                       ),
                     ],
